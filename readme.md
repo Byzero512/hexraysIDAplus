@@ -17,14 +17,14 @@
 ### c++
 1. operator
 ```cpp
-v1 = operator<<(&std::cout, string<<3);
+v1 = operator<<(&std::cout, p + 8);
 v2 = &std::endl;
 v3 = operator<<(v1, v2);
 => 
-v1 = {&std::cout << (string << 3)};
+v1 = {&std::cout << (p + 8)};
 v2 = &std::endl;
 v3 = {v1 << v2};
-==> v3 = {&std::cout << (string << 3) << &std::endl};
+==> v3 = {&std::cout << (p + 8) << &std::endl};
 ```
 2. template
 3. override
