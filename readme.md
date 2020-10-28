@@ -7,7 +7,7 @@
 
 ### usage
 
-1. flod code: {} block, case block
+1. flod code: {} block, case block. double click or press 'w'
 
 ![](./pic/hexraysIDAplusFlodCode.gif)
 
