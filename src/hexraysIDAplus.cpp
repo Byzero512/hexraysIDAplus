@@ -6,6 +6,7 @@
 #include <kernwin.hpp>
 #include <lines.hpp>
 #include <loader.hpp>
+#include <nalt.hpp>
 #include <struct.hpp>
 
 #ifdef TEST
@@ -87,7 +88,7 @@ struct LineInfo {
 netnode *idaplusNetnode = 0;
 hexdsp_t *hexdsp;
 LineInfo cursorLineInfo = {0};
-ea_t cursorLine = -1;
+adiff_t cursorLine = -1;
 
 #ifdef __EA64__
 #define ANCHOR_STR_LEN "16"
@@ -137,7 +138,7 @@ ea_t cursorLine = -1;
                 &_cidx);                                                       \
         cit = cfunc->treeitems[_cidx];                                         \
         qsnprintf(lineInfo.block, sizeof(ea_t) * 2 + 1,                        \
-                  "%0" ANCHOR_STR_LEN "x", cit->ea);                           \
+                  "%0" ANCHOR_STR_LEN "x", cit->ea - get_imagebase());         \
         if (-1 != defaultOffset) {                                             \
             lineInfo.caseBlock[0] = '\x01';                                    \
         } else {                                                               \
@@ -178,6 +179,7 @@ void doFoldCode(cfunc_t *cfunc) {
             i = j - 1;
         }
     }
+    int jumpLinePad = 0;
     while (markline.size()) {
         int high = markline.back();
         markline.pop_back();
@@ -188,7 +190,10 @@ void doFoldCode(cfunc_t *cfunc) {
             // case or default block
             for (int j = high - 1; j > low; j--) {
                 if (j != low + 1) {
-                    cfunc->sv.erase(&(cfunc->sv[j]));
+                    if (j < cursorLine) {
+                        jumpLinePad++;
+                        cfunc->sv.erase(&(cfunc->sv[j]));
+                    }
                 } /*else if (high != low + 2)*/ else {
                     char *buf = (char *)malloc(indent + 2 + 1);
                     memset(buf, '\x20', indent + 2);
@@ -201,6 +206,9 @@ void doFoldCode(cfunc_t *cfunc) {
         } else {
             // {} block
             for (int j = high - 1; j > low; j--) {
+                if (j < cursorLine) {
+                    jumpLinePad++;
+                }
                 cfunc->sv.erase(&(cfunc->sv[j]));
             }
             int omitStrOffset = GET_ANCHOR(low);
@@ -210,6 +218,7 @@ void doFoldCode(cfunc_t *cfunc) {
             }
         }
     }
+    cursorLine -= jumpLinePad;
 }
 
 void reFoldCode(vdui_t *vu) {
@@ -259,6 +268,16 @@ ssize_t idaapi myhexrays_cb_t(void *ud, hexrays_event_t event, va_list va) {
             vdui_t *vu = va_arg(va, vdui_t *);
             cfunc_t *cfunc = vu->cfunc;
             doFoldCode(cfunc);
+            break;
+        }
+
+        case hxe_keyboard: {
+            vdui_t *vu = va_arg(va, vdui_t *);
+            int keyCode = va_arg(va, int);
+            int shift_state = va_arg(va, int);
+            if ((int)'w' == keyCode || (int)'W' == keyCode) {
+                reFoldCode(vu);
+            }
             break;
         }
 
