@@ -11,8 +11,8 @@
 
 ![](./pic/hexraysIDAplusFlodCode.gif)
 
-1. code match: TODO
-2. simplify c++ decompiled code: TODO
+2. code match: TODO
+3. simplify c++ decompiled code: TODO
 
 ### c++
 1. operator
