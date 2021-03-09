@@ -19,4 +19,5 @@ cl.exe %cflags% %inputFile%  ^
 /link %rctLib% %exLib% %exLibPath% ^
 /OUT:%target% /IMPLIB:%oLib%
 
-del bin\*.ilk bin\*.exp *.obj *.pdb
+copy .\bin\hexraysIDAplus.dll F:\ctfTools\debugTools\IDA\IDA7.3\plugins\
+del .\*.obj .\*.pdb .\bin\*.exp .\bin\*.lib .\bin\*.ilk .\bin\*.pdb
