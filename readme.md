@@ -7,12 +7,11 @@
 
 ### usage
 
-1. flod code: {} block, case block. double click or press 'w'
+1. flod code by {} block/case block: press key 'w'
 
 ![](./pic/hexraysIDAplusFlodCode.gif)
 
-2. code match: TODO
-3. simplify c++ decompiled code: TODO
+2. simplify c++ decompiled code: TODO
 
 ### c++
 1. operator
