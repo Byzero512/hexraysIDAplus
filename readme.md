@@ -1,6 +1,6 @@
 ### pre
 
-1. test with hexrays 7.3(x86), hexrays 7.2(x64)
+1. test with hexrays 7.5
 
 2. do not run with hexrays 7.0, IDA will crash
 
