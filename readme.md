@@ -16,9 +16,9 @@
 ### c++
 1. operator
 ```cpp
-v1 = operator<<(&std::cout, p + 8);
+v1 = @<<(&std::cout, p + 8);
 v2 = &std::endl;
-v3 = operator<<(v1, v2);
+v3 = @<<(v1, v2);
 => 
 v1 = {&std::cout << (p + 8)};
 v2 = &std::endl;
