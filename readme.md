@@ -12,7 +12,7 @@
 ![](./pic/hexraysIDAplusFlodCode.gif)
 
 2. simplify c++ decompiled code: TODO
-3. hexrays diff
+3. hexrays diff: TODO
 
 
 ### c++
