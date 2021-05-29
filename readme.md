@@ -28,5 +28,3 @@ v3 = {v1 << v2};
 ==> v3 = {&std::cout << (p + 8) << &std::endl};
 ```
 2. template
-3. override
-4. vtable
