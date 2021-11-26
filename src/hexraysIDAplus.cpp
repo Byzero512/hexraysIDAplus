@@ -23,8 +23,7 @@ void print_text(cfunc_t* cfunc) {
                     msg("\\x%02x", line[j]);
                 else
                     msg("%c", line[j]);
-            }
-            else {
+            } else {
                 msg("\\x%02x", line[j]);
             }
         }
@@ -41,8 +40,7 @@ void print_text(qstring& line) {
                 msg("\\x%02x", line[j]);
             else
                 msg("%c", line[j]);
-        }
-        else {
+        } else {
             msg("\\x%02x", line[j]);
         }
     }
@@ -51,7 +49,7 @@ void print_text(qstring& line) {
 struct TestCtree : public ctree_parentee_t {
 public:
     cfunc_t* cfunc;
-    TestCtree(cfunc_t* cfunc = 0) : ctree_parentee_t(), cfunc(cfunc) {};
+    TestCtree(cfunc_t* cfunc = 0) : ctree_parentee_t(), cfunc(cfunc){};
     int idaapi visit_expr(cexpr_t* e) override {
         if (cot_call == e->op) {
             qstring str;
@@ -84,12 +82,14 @@ public:
 
 struct LineInfo {
     char block[sizeof(ea_t) * 2];
-    char caseBlock[sizeof(ea_t) * 2] = { 0 };
+    char caseBlock[sizeof(ea_t) * 2] = {0};
     char end = 0;
+    citem_t* cit=0;
+    int mark;
 };
 netnode* idaplusNetnode = 0;
-hexdsp_t* hexdsp;
-LineInfo cursorLineInfo = { 0 };
+// hexdsp_t* hexdsp;
+LineInfo cursorLineInfo = {0};
 adiff_t cursorLine = -1;
 
 #ifdef __EA64__
@@ -121,47 +121,83 @@ adiff_t cursorLine = -1;
 #define IS_GET_FOLD_INFO 0
 #define IS_SET_FOLD_INFO 1
 #define SETTING_RIGHT_BLOCK 2
-#define PARSE_LINE(x, parseType)                                               \
-    int mark = parseType;                                                      \
-    LineInfo lineInfo;                                                         \
-    citem_t *cit = 0;                                                          \
-    int _start = -1;                                                           \
-    int _cidx = -1;                                                            \
-    int blockOffset = -1;                                                      \
-    int caseOffset = -1;                                                       \
-    int defaultOffset = -1;                                                    \
-    if (-1 != (blockOffset = GET_LEFT_BLOCK(x)) ||                             \
-        (mark && -1 != (blockOffset = GET_RIGHT_BLOCK(x)) &&                   \
-         (mark = SETTING_RIGHT_BLOCK)) ||                                      \
-        -1 != (caseOffset = GET_CASE(x)) ||                                    \
-        -1 != (defaultOffset = GET_DEFAULT(x))) {                              \
-        _start = GET_ANCHOR(x) + 2;                                            \
-        qsscanf(cfunc->sv[x].line.c_str() + _start, "%" ANCHOR_STR_LEN "x",    \
-                &_cidx);                                                       \
-        cit = cfunc->treeitems[_cidx];                                         \
-        qsnprintf(lineInfo.block, sizeof(ea_t) * 2 + 1,                        \
-                  "%0" ANCHOR_STR_LEN "x", cit->ea - get_imagebase());         \
-        if (-1 != defaultOffset) {                                             \
-            lineInfo.caseBlock[0] = '\x01';                                    \
-        } else {                                                               \
-            if (-1 != caseOffset) {                                            \
-                _start = GET_CASE_ANCHOR(x);                                   \
-            } else {                                                           \
-                _start = GET_ANCHOR(x);                                        \
-            }                                                                  \
-            memcpy(lineInfo.caseBlock, cfunc->sv[x].line.c_str() + _start + 2, \
-                   sizeof(ea_t) * 2);                                          \
-        }                                                                      \
+// #define PARSE_LINE(x, parseType)                                               \
+//     int mark = parseType;                                                      \
+//     LineInfo lineInfo;                                                         \
+//     citem_t* cit = 0;                                                          \
+//     int _start = -1;                                                           \
+//     int _cidx = -1;                                                            \
+//     int blockOffset = -1;                                                      \
+//     int caseOffset = -1;                                                       \
+//     int defaultOffset = -1;                                                    \
+//     if (-1 != (blockOffset = GET_LEFT_BLOCK(x)) ||                             \
+//         (mark && -1 != (blockOffset = GET_RIGHT_BLOCK(x)) &&                   \
+//          (mark = SETTING_RIGHT_BLOCK)) ||                                      \
+//         -1 != (caseOffset = GET_CASE(x)) ||                                    \
+//         -1 != (defaultOffset = GET_DEFAULT(x))) {                              \
+//         _start = GET_ANCHOR(x) + 2;                                            \
+//         qsscanf(cfunc->sv[x].line.c_str() + _start, "%" ANCHOR_STR_LEN "x",    \
+//                 &_cidx);                                                       \
+//         cit = cfunc->treeitems[_cidx];                                         \
+//         qsnprintf(lineInfo.block, sizeof(ea_t) * 2 + 1,                        \
+//                   "%0" ANCHOR_STR_LEN "x", cit->ea - get_imagebase());         \
+//         if (-1 != defaultOffset) {                                             \
+//             lineInfo.caseBlock[0] = '\x01';                                    \
+//         } else {                                                               \
+//             if (-1 != caseOffset) {                                            \
+//                 _start = GET_CASE_ANCHOR(x);                                   \
+//             } else {                                                           \
+//                 _start = GET_ANCHOR(x);                                        \
+//             }                                                                  \
+//             memcpy(lineInfo.caseBlock, cfunc->sv[x].line.c_str() + _start + 2, \
+//                    sizeof(ea_t) * 2);                                          \
+//         }                                                                      \
+//     }
+LineInfo PARSE_LINE(cfunc_t* cfunc, int x, int parseType) {
+    LineInfo lineInfo;
+    lineInfo.mark=parseType;
+    int _start = -1;
+    int _cidx = -1;
+    int blockOffset = -1;
+    int caseOffset = -1;
+    int defaultOffset = -1;
+    if (-1 != (blockOffset = GET_LEFT_BLOCK(x)) ||
+        (lineInfo.mark && -1 != (blockOffset = GET_RIGHT_BLOCK(x)) &&
+         (lineInfo.mark = SETTING_RIGHT_BLOCK)) ||
+        -1 != (caseOffset = GET_CASE(x)) ||
+        -1 != (defaultOffset = GET_DEFAULT(x))) {
+        _start = GET_ANCHOR(x) + 2;
+        qsscanf(cfunc->sv[x].line.c_str() + _start, "%" ANCHOR_STR_LEN "x",
+                &_cidx);
+        _cidx &= 0xFFFFFF; // TODO: crash without operator &, ... not known why, nt!IopfCompleteRequest
+        // msg("hexraysIDAplus loaded! %d\n",_cidx);
+        lineInfo.cit = cfunc->treeitems[_cidx];
+        qsnprintf(lineInfo.block, sizeof(ea_t) * 2 + 1,
+                  "%0" ANCHOR_STR_LEN "x", lineInfo.cit->ea - get_imagebase());
+        if (-1 != defaultOffset) {
+            lineInfo.caseBlock[0] = '\x01';
+        } else {
+            if (-1 != caseOffset) {
+                _start = GET_CASE_ANCHOR(x);
+            } else {
+                _start = GET_ANCHOR(x);
+            }
+            memcpy(lineInfo.caseBlock, cfunc->sv[x].line.c_str() + _start + 2, sizeof(ea_t) * 2);
+        }
     }
-#define SET_FOLD_INFO(x) PARSE_LINE(x, IS_SET_FOLD_INFO);
-#define GET_FLOD_INFO(x) PARSE_LINE(x, IS_GET_FOLD_INFO);
+    return lineInfo;
+}
+#define SET_FOLD_INFO(x) PARSE_LINE(cfunc, x, IS_SET_FOLD_INFO);
+#define GET_FLOD_INFO(x) PARSE_LINE(cfunc, x, IS_GET_FOLD_INFO);
 
 void doFoldCode(cfunc_t* cfunc) {
     qvector<int> markline;
     int indent = -1;
     int newIndent = -1;
     for (int i = 0; i < cfunc->sv.size(); i++) {
-        GET_FLOD_INFO(i);
+        // citem_t* cit = 0;
+        LineInfo lineInfo=GET_FLOD_INFO(i);
+        citem_t* cit = lineInfo.cit;
         if (0 != cit && 0 != idaplusNetnode->hashval_long(lineInfo.block)) {
             if (0 != cursorLineInfo.block[0] &&
                 !memcmp(&lineInfo, &cursorLineInfo, sizeof(LineInfo))) {
@@ -205,8 +241,7 @@ void doFoldCode(cfunc_t* cfunc) {
                     free(buf);
                 }
             }
-        }
-        else {
+        } else {
             // {} block
             for (int j = high - 1; j > low; j--) {
                 if (j < cursorLine) {
@@ -217,7 +252,7 @@ void doFoldCode(cfunc_t* cfunc) {
             int omitStrOffset = GET_ANCHOR(low);
             if (-1 != omitStrOffset) {
                 cfunc->sv[low].line.insert(omitStrOffset + 2 + sizeof(ea_t) * 2,
-                    "  " COLSTR("...", SCOLOR_MACRO), 9);
+                                           "  " COLSTR("...", SCOLOR_MACRO), 9);
             }
         }
     }
@@ -237,15 +272,14 @@ void reFoldCode(vdui_t* vu) {
     // msg("indent: %d newIndent: %d {: %d case: %d\n", indent,
     //    newIndent, GET_LEFT_BLOCK_INDENT(x), GET_CASE_INDENT(x));
 #endif
-    SET_FOLD_INFO(x);
-    if (cit != 0) {
+    LineInfo lineInfo=SET_FOLD_INFO(x);
+    if (lineInfo.cit != 0) {
         if (idaplusNetnode->hashval_long(lineInfo.block)) {
-            if (SETTING_RIGHT_BLOCK != mark) {
+            if (SETTING_RIGHT_BLOCK != lineInfo.mark) {
                 idaplusNetnode->hashdel(lineInfo.block);
             }
-        }
-        else {
-            if (SETTING_RIGHT_BLOCK == mark) {
+        } else {
+            if (SETTING_RIGHT_BLOCK == lineInfo.mark) {
                 cursorLineInfo = lineInfo;
             }
             idaplusNetnode->hashset(lineInfo.block, 1);
@@ -254,10 +288,10 @@ void reFoldCode(vdui_t* vu) {
         if (-1 != cursorLine) {
             simpleline_place_t* place =
                 (simpleline_place_t*)get_custom_viewer_place(vu->ct, false, 0,
-                    0);
+                                                             0);
             place->n = cursorLine;
             jumpto(vu->ct, place, vu->cpos.x, vu->cpos.y);
-            cursorLineInfo = { 0 };
+            cursorLineInfo = {0};
             cursorLine = -1;
         }
     }
@@ -313,19 +347,18 @@ ssize_t idaapi myhexrays_cb_t(void* ud, hexrays_event_t event, va_list va) {
     return 0;
 }
 
-int idaapi init(void) {
+plugmod_t* idaapi init(void) {
     if (!init_hexrays_plugin()) {
-        return PLUGIN_SKIP;
+        return (int)PLUGIN_SKIP;
     }
 
     if (!install_hexrays_callback(myhexrays_cb_t, NULL)) {
         return PLUGIN_SKIP;
-    }
-    else {
+    } else {
         idaplusNetnode = new netnode("$idaplus", 0, true);
         if (!idaplusNetnode) {
             msg("hexraysIDAplus failed to load!\n");
-            return PLUGIN_SKIP;
+            return (int)PLUGIN_SKIP;
         }
         msg("hexraysIDAplus loaded!\n");
     }
@@ -346,5 +379,5 @@ const char wanted_name[] = "IDAplus";
 // wanted_hotkey[] =
 // "Alt-3";
 
-plugin_t PLUGIN{ IDP_INTERFACE_VERSION, 0,   init, term, run, comment, help,
-                wanted_name,           NULL };
+plugin_t PLUGIN{IDP_INTERFACE_VERSION, 0, init, term, run, comment, help,
+                wanted_name, NULL};
